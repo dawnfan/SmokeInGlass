@@ -18,7 +18,8 @@ private:
 	double my_refraction;
 	double my_refr_index;
 public:
-	Material() : my_color(Color(0.2f, 0.2f, 0.2f)), my_reflection(0), my_diffusion(0.2f) {};
+	Material() : my_color(Color(0.2f, 0.2f, 0.2f)), my_reflection(0), 
+		my_diffusion(0.2f), my_specular(0.8f), my_refr_index(1.5) {};
 	void setColor(Color& color) { my_color = color; }
 	void setReflection(double reflection) { my_reflection = reflection; }
 	void setDiffusion(double diffusion) { my_diffusion = diffusion; }
@@ -39,6 +40,9 @@ protected:
 	Material my_material;
 	char* my_name;
 	bool my_light;
+	// for smoke rendering
+	bool my_smoke;
+	float my_Density;
 public:
 	enum
 	{
@@ -53,6 +57,9 @@ public:
 	virtual int getType() = 0;
 	virtual int intersect(Ray& ray, double& t) = 0;
 	virtual Vector3 getNormal(Vector3& position) = 0;
+	// for smoke rendering
+	bool isSmoke() { return my_smoke; }
+	float getDensity() { return my_Density; }
 };
 
 class Sphere : public Primitive

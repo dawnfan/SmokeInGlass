@@ -2,7 +2,6 @@
 #define CAMERA_H
 
 #include "ray.h"
-#include "basics.h"
 #include "image.h"
 
 #define TRACINGDEPTH 5
@@ -21,6 +20,9 @@ private:
 	double start_x, start_y;
 	int my_pixel_width, my_pixel_height;
 	Image* my_image;
+
+	int rayHitTest(Ray ray, double &t, Primitive* &obj_out, bool isShadow = false);
+	Color getBaseColor(Ray ray, double t, Primitive* object);
 public:
 	Camera();
 	~Camera() { delete my_image; }

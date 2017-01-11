@@ -6,11 +6,10 @@
 #include "basics.h"
 #include "camera.h"
 
+Camera* my_camera;
+
 void draw()
 {
-	Camera* my_camera;
-	my_camera = new Camera();
-	my_camera->render();
 	float dx = 1.0 / 800;
 	float dy = 1.0 / 600;
 	GLfloat x = 0.0;
@@ -50,9 +49,11 @@ void reshape(int w, int h)
 	gluLookAt(0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 }
 
-void init()
+void initRender()
 {
 	glClearColor(0, 0, 0, 0);
+	my_camera = new Camera();
+	my_camera->render();
 }
 
 int main(int avgc, char** avgv)
@@ -62,7 +63,7 @@ int main(int avgc, char** avgv)
 	glutInitWindowPosition(10, 10);
 	glutInitWindowSize(800, 600);
 	glutCreateWindow("RayTracing");
-	init();
+	initRender();
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
 	glutMainLoop();

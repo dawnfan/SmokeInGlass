@@ -22,13 +22,8 @@ Camera::Camera()
 	my_image = new Image();
 }
 
-Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double index, double& t)
-{
-	if (re_depth > TRACINGDEPTH) return 0;
-
-	t = 10000.0f;
-	Primitive* object = 0;
-	int result;
+int Camera::rayHitTest(Ray ray, double &t, Primitive* &obj_out, bool isShadow){
+	int result = 0;
 	for (int i = 0; i < my_image->getNumber(); i++)
 	{
 		Primitive* tmp_object = my_image->getPrimitive(i);
@@ -36,9 +31,85 @@ Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double i
 		if (tmp_result)
 		{
 			result = tmp_result;
-			object = tmp_object;
+			obj_out = tmp_object;
+			// shadow ray then early determination
+			if (isShadow && (!tmp_object->isLight())){
+				break;
+			}
 		}
 	}
+	return result;
+}
+
+Color Camera::getBaseColor(Ray ray, double t, Primitive* object)
+{
+	Color pixel_color;
+	// #2 : Render base color
+	// set hitting vectors
+	Vector3 V = ray.getDirection();
+	Vector3 intersection = ray.getPoint(t);
+	Vector3 N = object->getNormal(intersection);
+	Color object_color = object->getMaterial()->getColor();
+	for (int j = 0; j < my_image->getNumber(); j++)
+	{
+		// #2.1 : Find lights
+		Primitive* next_object = my_image->getPrimitive(j);
+		if (next_object->isLight())
+		{
+			Primitive* light = next_object;
+			if (light->getType() == Primitive::SPHERE)
+			{
+				// #2.2 : Shadow Ray
+				Vector3 L = ((Sphere*)light)->getCenter() - intersection;
+				Vector3 R = L - N * 2.0f * L.Dot(N);
+				R.Normalize();
+				Color light_color = light->getMaterial()->getColor();
+				// shadow
+				double shadow = 1.0f;
+				double tmp_t = L.L2Norm();
+				L.Normalize();
+				Ray shadow_ray = Ray(intersection + L*EPSILON, L);
+				Primitive* shadow_object;
+				rayHitTest(shadow_ray, tmp_t, shadow_object, true);
+				shadow = shadow_object->isLight();
+				// #2.3 : Calculate pixel color
+				// diffusion
+				double diffusion = object->getMaterial()->getDiffusion();
+				if (diffusion > 0)
+				{
+					double dot = N.Dot(L);
+					if (dot > 0)
+					{
+						double kd = diffusion * dot * shadow;
+						pixel_color += light_color * object_color * kd;
+					}
+				}
+				// specular
+				double specular = object->getMaterial()->getSpecular();
+				if (specular > 0)
+				{
+					double dot = V.Dot(R);
+					if (dot > 0)
+					{
+						double ks = pow(dot, 20) * specular * shadow;
+						pixel_color += light_color * ks;//why no material color?
+					}
+				}
+			}
+		}
+	}
+	return pixel_color;
+}
+
+Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double index, double& t)
+{
+	if (re_depth > TRACINGDEPTH) return 0;
+
+	t = 10000.0f;
+	Primitive* object = 0;
+	// #1 : Ray Hitting test
+	int result = rayHitTest(ray, t, object);
+	
 	// hit nothing
 	if (!object) return 0;
 	// hit a light
@@ -49,64 +120,16 @@ Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double i
 	// hit a object
 	else
 	{
+		// #2 : Render base color
+		pixel_color = getBaseColor(ray, t, object);
+
+		// set hitting vectors
 		Vector3 V = ray.getDirection();
 		Vector3 intersection = ray.getPoint(t);
 		Vector3 N = object->getNormal(intersection);
-		Color object_color = object->getMaterial()->getColor();
-		for (int j = 0; j < my_image->getNumber(); j++)
-		{
-			Primitive* next_object = my_image->getPrimitive(j);
-			if (next_object->isLight())
-			{
-				Primitive* light = next_object;
-				if (light->getType() == Primitive::SPHERE)
-				{
-					Vector3 L = ((Sphere*)light)->getCenter() - intersection;
-					Vector3 R = L - N * 2.0f * L.Dot(N);
-					R.Normalize();
-					Color light_color = light->getMaterial()->getColor();
-					// shadow
-					double shadow = 1.0f;
-					double tmp_t = L.L2Norm();
-					L.Normalize();
-					Ray shadow_ray = Ray(intersection + L*EPSILON, L);
-					for (int k = 0; k < my_image->getNumber(); k++)
-					{
-						Primitive* shadow_object = my_image->getPrimitive(k);
-						// early determination
-						if ((!shadow_object->isLight()) && (shadow_object->intersect(shadow_ray, tmp_t)))
-						{
-							shadow = 0;
-							break;
-						}
-					}
-					// diffusion
-					double diffusion = object->getMaterial()->getDiffusion();
-					if (diffusion > 0)
-					{
-						double dot = N.Dot(L);
-						if (dot > 0)
-						{
-							double kd = diffusion * dot * shadow;
-							pixel_color += light_color * object_color * kd;
-						}
-					}
-					// specular
-					double specular = object->getMaterial()->getSpecular();
-					if (specular > 0)
-					{
-						double dot = V.Dot(R);
-						if (dot > 0)
-						{
-							double ks = pow(dot, 20) * specular * shadow;
-							pixel_color += light_color * ks;//why no material color?
-						}
-					}
-				}
-			}
-		}
-		//reflection
+		// #3 : reflection
 		double reflection = object->getMaterial()->getReflection();
+		Color object_color = object->getMaterial()->getColor();
 		if ((reflection > 0) && (re_depth < TRACINGDEPTH))
 		{
 			Vector3 re_R = V - N * V.Dot(N) * 2.0f;
@@ -115,7 +138,7 @@ Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double i
 			rayTrace(Ray(intersection + re_R * EPSILON, re_R), re_color, re_depth + 1, index, re_t);
 			pixel_color += object_color * re_color * reflection;//color blend??
 		}
-		//refraction
+		// #4 : refraction
 		double refraction = object->getMaterial()->getRefraction();
 		if ((refraction>0) && (re_depth < TRACINGDEPTH))
 		{
@@ -168,7 +191,7 @@ void Camera::render()
 					my_color += tmp_color;
 				}
 			}
-			screen[i][j] = my_color/9.0;
+			screen[i][j] = my_color / 9.0;
 			this_x += dx * 3;
 		}
 		this_y += dy * 3;

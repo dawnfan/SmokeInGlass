@@ -1,4 +1,3 @@
-#include "basics.h"
 #include "image.h"
 
 int Sphere::intersect(Ray& ray, double& t)
@@ -99,7 +98,13 @@ void Image::init()
 	my_primitive[1]->getMaterial()->setReflection(0.2f);
 	my_primitive[1]->getMaterial()->setRefraction(0.8f);
 	my_primitive[1]->getMaterial()->setRefrIndex(1.3f);
-	my_primitive[1]->getMaterial()->setColor(Color(0.7f, 0.7f, 1.0f));
+	my_primitive[1]->getMaterial()->setColor(Color(0.7f, 0.7f, 0.7f));
+	// inside big sphere
+	my_primitive[8] = new Sphere(Vector3(2, 0.8f, 3), 2.2f);
+	my_primitive[8]->getMaterial()->setReflection(0.2f);
+	my_primitive[8]->getMaterial()->setRefraction(0.8f);
+	my_primitive[8]->getMaterial()->setRefrIndex(1.0f);
+	my_primitive[8]->getMaterial()->setColor(Color(0.7f, 0.7f, 0.7f));
 	// small sphere
 	my_primitive[2] = new Sphere(Vector3(-5.5f, -0.5, 7), 2);
 	my_primitive[2]->getMaterial()->setReflection(0.5f);
@@ -136,7 +141,7 @@ void Image::init()
 	my_primitive[7]->getMaterial()->setDiffusion(0.5f);
 	my_primitive[7]->getMaterial()->setColor(Color(0.4f, 0.7f, 0.7f));
 	// grid
-	int prim = 8;
+	int prim = 9;
 	for (int x = 0; x < 8; x++) for (int y = 0; y < 7; y++)
 	{
 		my_primitive[prim] = new Sphere(Vector3(-4.5f + x * 1.5f, -4.3f + y * 1.5f, 10), 0.3f);
