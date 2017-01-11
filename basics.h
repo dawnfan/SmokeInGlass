@@ -46,7 +46,12 @@ public:
 	double & X() { return v[0]; }
 	double & Y() { return v[1]; }
 	double & Z() { return v[2]; }
-
+	void Set(const double & a, const double & b, const double &c)	
+	{
+		v[0] = a;
+		v[1] = b;
+		v[2] = c;
+	}
 	const double & operator[] (int index) const { return v[index]; }
 	double & operator[] (int index) { return v[index]; }
 

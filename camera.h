@@ -1,8 +1,9 @@
 #ifndef CAMERA_H
 #define CAMERA_H
-
+#pragma once
 #include "ray.h"
 #include "image.h"
+#include "smoke.h"
 
 #define TRACINGDEPTH 5
 
@@ -20,6 +21,10 @@ private:
 	double start_x, start_y;
 	int my_pixel_width, my_pixel_height;
 	Image* my_image;
+	// smoke rendering
+	std::vector<Sphere> my_smoke_spheres;
+	std::vector<Sphere> my_lights;
+	Smoke my_smoke_render;
 
 	int rayHitTest(Ray ray, double &t, Primitive* &obj_out, bool isShadow = false);
 	Color getBaseColor(Ray ray, double t, Primitive* object);
@@ -30,6 +35,8 @@ public:
 	Primitive* rayTrace(Ray& ray, Color& pixel_color, int re_depth, double index, double& t);
 	void render();
 	Color screen[PIXELHEIGHT][PIXELWIDTH];
+	// smoke rendering
+	void GenerateSmoke();
 };
 
 #endif	// CAMERA_H

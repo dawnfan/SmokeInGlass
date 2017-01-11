@@ -20,7 +20,41 @@ Camera::Camera()
 	my_right.Normalize();
 	my_screen_center = my_position + my_front * my_flength;
 	my_image = new Image();
+	// smoke rendering
+	GenerateSmoke();
 }
+
+//Generate voxel space large enough to hold all spheres, discretize the spheres into the voxel space, then calculate
+// the light transmissivity for each voxel
+void Camera::GenerateSmoke()
+{
+	//find maximum x, y, z coordinates of spheres in view space
+	float maxX = 0.0f;
+	float maxY = 0.0f;
+	float maxZ = 0.0f;
+	float x, y, z;
+	float maxPerturbation = 1.0f;
+
+	for (unsigned int i = 0; i < my_smoke_spheres.size(); i++)
+	{
+		Sphere sphere = my_smoke_spheres[i];
+		x = fabs(sphere.getCenter().X()) + maxPerturbation*sphere.getRadius();
+		y = fabs(sphere.getCenter().Y()) + maxPerturbation*sphere.getRadius();
+		z = fabs(sphere.getCenter().Z()) + maxPerturbation*sphere.getRadius();
+		if (x > maxX)
+			maxX = x;
+		if (y > maxY)
+			maxY = y;
+		if (z > maxZ)
+			maxZ = z;
+	}
+
+	my_smoke_render.GenerateVoxels(maxX, maxY, maxZ);
+	my_smoke_render.VoxelizeSpheres(my_smoke_spheres);
+	my_smoke_render.AddLightTransmissivity(my_lights);
+
+}
+
 
 int Camera::rayHitTest(Ray ray, double &t, Primitive* &obj_out, bool isShadow){
 	int result = 0;

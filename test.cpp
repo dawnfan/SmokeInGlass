@@ -53,7 +53,9 @@ void initRender()
 {
 	glClearColor(0, 0, 0, 0);
 	my_camera = new Camera();
+	std::cout << "Generation for image & smoke: done." << endl;
 	my_camera->render();
+	std::cout << "Rendering: done." << endl;
 }
 
 int main(int avgc, char** avgv)
