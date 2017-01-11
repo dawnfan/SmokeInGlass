@@ -21,9 +21,28 @@ Camera::Camera()
 	my_screen_center = my_position + my_front * my_flength;
 	my_image = new Image();
 	// smoke rendering
+	GenerateSpheres();
 	GenerateSmoke();
 }
 
+void Camera::GenerateSpheres()
+{
+	for (int i = 0; i < my_image->getNumber(); i++)
+	{
+		Primitive* object = my_image->getPrimitive(i);
+		if (object->getType() == Primitive::SPHERE)
+		{
+			if (object->isLight())
+			{
+				my_lights.push_back((Sphere*)object);
+			}
+			else if (object->isSmoke())
+			{
+				my_smoke_spheres.push_back((Sphere*)object);
+			}
+		}
+	}
+}
 //Generate voxel space large enough to hold all spheres, discretize the spheres into the voxel space, then calculate
 // the light transmissivity for each voxel
 void Camera::GenerateSmoke()
@@ -37,10 +56,10 @@ void Camera::GenerateSmoke()
 
 	for (unsigned int i = 0; i < my_smoke_spheres.size(); i++)
 	{
-		Sphere sphere = my_smoke_spheres[i];
-		x = fabs(sphere.getCenter().X()) + maxPerturbation*sphere.getRadius();
-		y = fabs(sphere.getCenter().Y()) + maxPerturbation*sphere.getRadius();
-		z = fabs(sphere.getCenter().Z()) + maxPerturbation*sphere.getRadius();
+		Sphere* sphere = my_smoke_spheres[i];
+		x = fabs(sphere->getCenter().X()) + maxPerturbation*sphere->getRadius();
+		y = fabs(sphere->getCenter().Y()) + maxPerturbation*sphere->getRadius();
+		z = fabs(sphere->getCenter().Z()) + maxPerturbation*sphere->getRadius();
 		if (x > maxX)
 			maxX = x;
 		if (y > maxY)
@@ -143,7 +162,7 @@ Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double i
 	Primitive* object = 0;
 	// #1 : Ray Hitting test
 	int result = rayHitTest(ray, t, object);
-	
+
 	// hit nothing
 	if (!object) return 0;
 	// hit a light

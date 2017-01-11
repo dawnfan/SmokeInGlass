@@ -16,9 +16,9 @@ public:
 	~Smoke();
 
 	void GenerateVoxels(float maxX, float maxY, float maxZ);
-	void VoxelizeSpheres(std::vector<Sphere> spheres);
+	void VoxelizeSpheres(std::vector<Sphere*> spheres);
 	bool IsOutside(Vector3& location);
-	void AddLightTransmissivity(std::vector<Sphere> lights);
+	void AddLightTransmissivity(std::vector<Sphere*> lights);
 	float InterpAllValues(Vector3& location, Vector3* color, float* trans);
 private:
 	std::vector<Voxel> m_voxelarray;

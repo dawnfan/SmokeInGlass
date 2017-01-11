@@ -18,7 +18,7 @@ private:
 	double my_refraction;
 	double my_refr_index;
 public:
-	Material() : my_color(Color(0.2f, 0.2f, 0.2f)), my_reflection(0), 
+	Material() : my_color(Color(0.2f, 0.2f, 0.2f)), my_reflection(0),
 		my_diffusion(0.2f), my_specular(0.8f), my_refr_index(1.5) {};
 	void setColor(Color& color) { my_color = color; }
 	void setReflection(double reflection) { my_reflection = reflection; }
@@ -40,16 +40,15 @@ protected:
 	Material my_material;
 	char* my_name;
 	bool my_light;
-	// for smoke rendering
 	bool my_smoke;
-	float my_Density;
+	double my_density;
 public:
 	enum
 	{
 		SPHERE = 1,
 		PLANE
 	};
-	Primitive() : my_name(0), my_light(false) {};
+	Primitive() : my_name(0), my_light(false), my_smoke(false), my_density(1.0f) {};
 	Material* getMaterial() { return &my_material; }
 	void setMaterial(Material& material) { my_material = material; }
 	bool isLight() { return my_light; }
@@ -57,9 +56,10 @@ public:
 	virtual int getType() = 0;
 	virtual int intersect(Ray& ray, double& t) = 0;
 	virtual Vector3 getNormal(Vector3& position) = 0;
-	// for smoke rendering
 	bool isSmoke() { return my_smoke; }
-	float getDensity() { return my_Density; }
+	double getDensity() { return my_density; }
+	virtual void setSmoke(bool smoke) { my_smoke = smoke; }
+	virtual void setDensity(double density) { my_density = density; }
 };
 
 class Sphere : public Primitive
@@ -73,7 +73,7 @@ public:
 	double getRadius() { return my_Radius; }
 	int getType() { return SPHERE; }
 	virtual int intersect(Ray& ray, double& t) override;
-	Vector3 getNormal(Vector3& position) { return (position - my_center)/my_Radius; }
+	Vector3 getNormal(Vector3& position) { return (position - my_center) / my_Radius; }
 };
 
 class Plane : public Primitive

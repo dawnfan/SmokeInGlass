@@ -49,7 +49,7 @@ void Smoke::GenerateVoxels(float maxX, float maxY, float maxZ)
 }
 
 //Discretizes the color and density of each sphere's volume into the voxels in the voxelspace
-void Smoke::VoxelizeSpheres(std::vector<Sphere> spheres)
+void Smoke::VoxelizeSpheres(std::vector<Sphere*> spheres)
 {
 	Vector3 sphereCenter, voxelCenter;
 	float sphereRad;
@@ -60,13 +60,13 @@ void Smoke::VoxelizeSpheres(std::vector<Sphere> spheres)
 
 	for (unsigned int sphereIndex = 0; sphereIndex < spheres.size(); sphereIndex++)
 	{
-		sphereCenter = spheres[sphereIndex].getCenter();
-		density = spheres[sphereIndex].getDensity();
-		color = spheres[sphereIndex].getMaterial()->getColor();
+		sphereCenter = spheres[sphereIndex]->getCenter();
+		density = spheres[sphereIndex]->getDensity();
+		color = spheres[sphereIndex]->getMaterial()->getColor();
 		for (unsigned int voxelIndex = 0; voxelIndex < m_voxelarray.size(); voxelIndex++)
 		{
 			voxelCenter = m_voxelarray[voxelIndex].GetCenter();
-			sphereRad = spheres[sphereIndex].getRadius();
+			sphereRad = spheres[sphereIndex]->getRadius();
 			sphereRad = (float)m_voxelarray[voxelIndex].GetNoise()*0.5f *sphereRad + sphereRad;
 			radSquared = sphereRad*sphereRad;
 			distance = 1.0f - (pow((voxelCenter - sphereCenter).L2Norm(), 2) / radSquared);
@@ -83,7 +83,7 @@ void Smoke::VoxelizeSpheres(std::vector<Sphere> spheres)
 
 }
 //Calculates light transmissivity for every voxel in the voxelspace
-void Smoke::AddLightTransmissivity(std::vector<Sphere> lights)
+void Smoke::AddLightTransmissivity(std::vector<Sphere*> lights)
 {
 	Vector3 voxelCenter;
 	Vector3 lightDir;
@@ -94,7 +94,7 @@ void Smoke::AddLightTransmissivity(std::vector<Sphere> lights)
 		for (int l_t = 0; l_t < light_num; l_t++)
 		{
 			voxelCenter = m_voxelarray[i].GetCenter();
-			lightDir = lights[l_t].getCenter() - voxelCenter;
+			lightDir = lights[l_t]->getCenter() - voxelCenter;
 			T = RaymarchLight(voxelCenter, lightDir);
 			m_voxelarray[i].SetTransmissivity(T);
 		}

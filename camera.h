@@ -1,5 +1,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
+
 #pragma once
 #include "ray.h"
 #include "image.h"
@@ -21,9 +22,11 @@ private:
 	double start_x, start_y;
 	int my_pixel_width, my_pixel_height;
 	Image* my_image;
-	// smoke rendering
-	std::vector<Sphere> my_smoke_spheres;
-	std::vector<Sphere> my_lights;
+	double m_deltaS;
+	double m_kappa;
+	Color m_backgroundColor;
+	std::vector<Sphere*> my_smoke_spheres;
+	std::vector<Sphere*> my_lights;
 	Smoke my_smoke_render;
 
 	int rayHitTest(Ray ray, double &t, Primitive* &obj_out, bool isShadow = false);
@@ -36,7 +39,9 @@ public:
 	void render();
 	Color screen[PIXELHEIGHT][PIXELWIDTH];
 	// smoke rendering
+	void GenerateSpheres();
 	void GenerateSmoke();
+	Color rayMarch(Vector3& rayDirection, double startT, double endT);
 };
 
 #endif	// CAMERA_H

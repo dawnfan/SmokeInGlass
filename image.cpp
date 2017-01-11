@@ -152,6 +152,12 @@ void Image::init()
 		my_primitive[prim]->getMaterial()->setColor(Color(0.3f, 1.0f, 0.4f));
 		prim++;
 	}
+	// smoke sphere
+	my_primitive[prim] = new Sphere(Vector3(0.f, -0.0f, 1), 1.0f);
+	my_primitive[prim]->setSmoke(true);
+	my_primitive[prim]->setDensity(2.0f);
+	prim++;
+
 	// set number of primitives
 	number = prim;
 }
