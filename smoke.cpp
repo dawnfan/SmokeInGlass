@@ -24,9 +24,11 @@ void Smoke::GenerateVoxels(Vector3 maxV, Vector3 minV)
 	m_minZ = ceil(minV.Z());
 	// set the voxel distribution(cube) based on smoke size
 	Vector3 voxelSize = maxV - minV;
-	m_voxelWidth = (unsigned int)(ceil(voxelSize.X() / VOXEL_SCALE)) + 1;
-	m_voxelHeight = (unsigned int)(ceil(voxelSize.Y() / VOXEL_SCALE)) + 1;
-	m_voxelDepth = (unsigned int)(ceil(voxelSize.Z() / VOXEL_SCALE)) + 1;
+	m_voxelWidth = (unsigned int)(ceil(1 / VOXEL_SCALE)) + 1;
+	m_voxelHeight = (unsigned int)(ceil(1 / VOXEL_SCALE)) + 1;
+	m_voxelDepth = (unsigned int)(ceil(1 / VOXEL_SCALE)) + 1;
+
+	voxelSize.Set(voxelSize.X() / m_voxelWidth, voxelSize.Y() / m_voxelHeight, voxelSize.Z() / m_voxelDepth);
 
 	float x, y, z;
 
@@ -34,18 +36,19 @@ void Smoke::GenerateVoxels(Vector3 maxV, Vector3 minV)
 	// generate the voxel-array spread in space.
 	double alpha = 1.0;
 	double beta = 2.0;
+	int scale_noise = (m_maxX - m_minX);
 	for (unsigned int i = 0; i < m_voxelDepth; i++)
 	{
-		z = -1.0f*i*VOXEL_SCALE;
+		z = -1.0f*i*voxelSize.Z();
 		for (unsigned int j = 0; j < m_voxelHeight; j++)
 		{
-			y = m_maxY - (j*VOXEL_SCALE);
+			y = m_maxY - (j*voxelSize.Y());
 			for (unsigned int k = 0; k < m_voxelWidth; k++)
 			{
-				x = m_maxX - (k*VOXEL_SCALE);
+				x = m_maxX - (k*voxelSize.X());
 				voxel = Voxel(x, y, z);
 				double d = PerlinNoise3D(x, y, z, alpha, beta, 6);
-				voxel.SetNoise(d);
+				voxel.SetNoise(d*4);
 				m_voxelarray.push_back(voxel);
 			}
 		}
@@ -107,6 +110,7 @@ void Smoke::AddLightTransmissivity(std::vector<Sphere*> lights)
 			T += RaymarchLight(voxelCenter, lightDir);
 		}
 		T /= light_num;
+		T /= (m_maxX - m_minX)/2;
 		m_voxelarray[i].SetTransmissivity(T);
 	}
 
@@ -242,9 +246,9 @@ unsigned int Smoke::GetIndexFromLocation(float x, float y, float z)
 	if(-z > m_maxZ)
 	return 0;*/
 
-	float xV = (m_maxX - x) / VOXEL_SCALE;
-	float yV = (m_maxY - y) / VOXEL_SCALE;
-	float zV = (m_maxZ - z) / VOXEL_SCALE;
+	float xV = (m_maxX - x) / (m_maxX - m_minX) / VOXEL_SCALE;
+	float yV = (m_maxY - y) / (m_maxY - m_minY) / VOXEL_SCALE;
+	float zV = (m_maxZ - z) / (m_maxZ - m_minZ) / VOXEL_SCALE;
 
 	unsigned int xInt = m_voxelWidth - 1 - (unsigned int)xV;
 	unsigned int yInt = (m_voxelHeight - 1) - (unsigned int)yV;

@@ -97,6 +97,15 @@ public:
 		v[1] /= denom;
 		v[2] /= denom;
 	}
+	Vector3 Normalized()
+	{
+		Vector3 tmp_v;
+		double denom = this->L2Norm();
+		tmp_v[0] /= denom;
+		tmp_v[1] /= denom;
+		tmp_v[2] /= denom;
+		return tmp_v;
+	}
 	Vector3 Min(const Vector3 & r)
 	{
 		return Vector3(__min(v[0], r[0]), __min(v[1], r[1]), __min(v[2], r[2]));
