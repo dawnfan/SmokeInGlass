@@ -95,7 +95,7 @@ void Smoke::AddLightTransmissivity(std::vector<Sphere*> lights)
 		{
 			voxelCenter = m_voxelarray[i].GetCenter();
 			lightDir = lights[l_t]->getCenter() - voxelCenter;
-			T = RaymarchLight(voxelCenter, lightDir);
+			T += RaymarchLight(voxelCenter, lightDir);
 			m_voxelarray[i].SetTransmissivity(T);
 		}
 	}
