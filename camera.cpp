@@ -1,5 +1,7 @@
 #include "camera.h"
 
+#define MAX_FLOAT_VALUE (static_cast<float>(10e10))
+
 Camera::Camera()
 {
 	my_screen_width = SCREENWIDTH;
@@ -51,24 +53,41 @@ void Camera::GenerateSmoke()
 	float maxX = 0.0f;
 	float maxY = 0.0f;
 	float maxZ = 0.0f;
+	float minX = MAX_FLOAT_VALUE;
+	float minY = MAX_FLOAT_VALUE;
+	float minZ = MAX_FLOAT_VALUE;
 	float x, y, z;
 	float maxPerturbation = 1.0f;
 
 	for (unsigned int i = 0; i < my_smoke_spheres.size(); i++)
 	{
 		Sphere* sphere = my_smoke_spheres[i];
-		x = fabs(sphere->getCenter().X()) + maxPerturbation*sphere->getRadius();
-		y = fabs(sphere->getCenter().Y()) + maxPerturbation*sphere->getRadius();
-		z = fabs(sphere->getCenter().Z()) + maxPerturbation*sphere->getRadius();
+		// get smoke bounding box
+		x = sphere->getCenter().X() + maxPerturbation*sphere->getRadius();
+		y = sphere->getCenter().Y() + maxPerturbation*sphere->getRadius();
+		z = sphere->getCenter().Z() + maxPerturbation*sphere->getRadius();
+
 		if (x > maxX)
 			maxX = x;
 		if (y > maxY)
 			maxY = y;
 		if (z > maxZ)
 			maxZ = z;
+		x = sphere->getCenter().X() - maxPerturbation*sphere->getRadius();
+		y = sphere->getCenter().Y() - maxPerturbation*sphere->getRadius();
+		z = sphere->getCenter().Z() - maxPerturbation*sphere->getRadius();
+
+		if (x < minX)
+			maxX = x;
+		if (y < minY)
+			maxY = y;
+		if (z < minZ)
+			maxZ = z;
 	}
 
-	my_smoke_render.GenerateVoxels(maxX, maxY, maxZ);
+	Vector3 maxV(maxX, maxY, maxZ);
+	Vector3 minV(minX, minY, minZ);
+	my_smoke_render.GenerateVoxels(maxV, minV);
 	my_smoke_render.VoxelizeSpheres(my_smoke_spheres);
 	my_smoke_render.AddLightTransmissivity(my_lights);
 
@@ -170,6 +189,34 @@ Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double i
 	{
 		pixel_color = object->getMaterial()->getColor();
 	}
+	// hit smoke sphere
+	else if (object->isSmoke())
+	{
+		Vector3 intersectionA = ray.getPoint(t);
+		Vector3 direction = ray.getDirection();
+		Ray ray_in_smoke(intersectionA + direction*EPSILON, direction);
+		double t_out_smoke = 10000.0f;
+		int result_out_smoke = object->intersect(ray_in_smoke, t_out_smoke);
+		Vector3 intersectionB = ray_in_smoke.getPoint(t_out_smoke);
+		double startT = t;
+		double endT = (intersectionB - intersectionA).X() / direction.X() + startT;
+		if (result_out_smoke == -1)
+		{
+			pixel_color += rayMarch(direction, startT, endT);/////
+		}
+		else
+		{
+			intersectionB = intersectionA;
+		}
+		///////////////how to put density effect into this
+		//cout << t << endl;
+		double smoke_t;
+		Color smoke_color(0, 0, 0);
+		Ray ray_out_smoke(intersectionB + direction*EPSILON, direction);
+		rayTrace(ray_out_smoke, smoke_color, re_depth + 1, index, smoke_t);
+		double density = object->getDensity();
+		pixel_color += smoke_color*density;//////
+	}
 	// hit a object
 	else
 	{
@@ -216,6 +263,39 @@ Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double i
 	return object;
 }
 
+Color Camera::rayMarch(Vector3& rayDirection, double startT, double endT)
+{
+	Color color_a(0, 0, 0);
+	Vector3 location(0, 0, 0);
+	location = location + rayDirection * startT;
+	double T = 1.0f;
+	double deltaT;
+	double current_t = startT;
+
+	Color instColor;
+	double instDensity;
+	float lightTrans;
+	while (T > EPSILON)
+	{
+		location = location + rayDirection * m_deltaS;
+		current_t += m_deltaS;
+		if ((my_smoke_render.IsOutside(location)) || (current_t >= endT))
+		{
+			color_a += m_backgroundColor * T;
+			return color_a;
+		}
+		else
+		{
+			instDensity = my_smoke_render.InterpAllValues(location, &instColor, &lightTrans);
+			deltaT = exp(-m_kappa*m_deltaS*instDensity);
+			T *= deltaT;
+			Color light_color(1, 1, 1);
+			color_a += instColor * light_color * (1 - deltaT) / m_kappa * T * lightTrans;
+		}
+	}
+	return color_a;
+}
+
 void Camera::render()
 {
 	dx /= 3.0f;
@@ -246,6 +326,24 @@ void Camera::render()
 			}
 			screen[i][j] = my_color / 9.0;
 			this_x += dx * 3;
+		}
+		if (i == my_pixel_height / 3)
+		{
+			std::cout << "1/3 raytracing: done." << endl;
+		}
+		else if (i == 5*my_pixel_height / 12)
+		{
+			std::cout << "5/12 raytracing: done." << endl;
+			// could be a endless recursion.
+			// consider the smoke part: what the process is. and when the process can be ended.
+		}
+		else if (i == my_pixel_height / 2)
+		{
+			std::cout << "1/2 raytracing: done." << endl;
+		}
+		else if (i == 2*my_pixel_height / 3)
+		{
+			std::cout << "2/3 raytracing: done." << endl;
 		}
 		this_y += dy * 3;
 	}

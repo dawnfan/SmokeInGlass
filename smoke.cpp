@@ -14,20 +14,24 @@ Smoke::~Smoke()
 {
 }
 
-void Smoke::GenerateVoxels(float maxX, float maxY, float maxZ)
+void Smoke::GenerateVoxels(Vector3 maxV, Vector3 minV)
 {
-	m_maxX = ceil(maxX);
-	m_maxY = ceil(maxY);
-	m_maxZ = ceil(maxZ);
-
-	m_voxelWidth = (unsigned int)(ceil((2 * m_maxX) / VOXEL_SCALE)) + 1;
-	m_voxelHeight = (unsigned int)(ceil((2 * m_maxY) / VOXEL_SCALE)) + 1;
-	m_voxelDepth = (unsigned int)(ceil(m_maxZ / VOXEL_SCALE)) + 1;
+	m_maxX = ceil(maxV.X());
+	m_maxY = ceil(maxV.Y());
+	m_maxZ = ceil(maxV.Z());
+	m_minX = ceil(minV.X());
+	m_minY = ceil(minV.Y());
+	m_minZ = ceil(minV.Z());
+	// set the voxel distribution(cube) based on smoke size
+	Vector3 voxelSize = maxV - minV;
+	m_voxelWidth = (unsigned int)(ceil(voxelSize.X() / VOXEL_SCALE)) + 1;
+	m_voxelHeight = (unsigned int)(ceil(voxelSize.Y() / VOXEL_SCALE)) + 1;
+	m_voxelDepth = (unsigned int)(ceil(voxelSize.Z() / VOXEL_SCALE)) + 1;
 
 	float x, y, z;
 
 	Voxel voxel(0.0f, 0.0f, 0.0f);
-
+	// generate the voxel-array spread in space.
 	double alpha = 1.0;
 	double beta = 2.0;
 	for (unsigned int i = 0; i < m_voxelDepth; i++)
@@ -65,11 +69,15 @@ void Smoke::VoxelizeSpheres(std::vector<Sphere*> spheres)
 		color = spheres[sphereIndex]->getMaterial()->getColor();
 		for (unsigned int voxelIndex = 0; voxelIndex < m_voxelarray.size(); voxelIndex++)
 		{
+			// calculate distance between voxel and sphere center.
 			voxelCenter = m_voxelarray[voxelIndex].GetCenter();
 			sphereRad = spheres[sphereIndex]->getRadius();
 			sphereRad = (float)m_voxelarray[voxelIndex].GetNoise()*0.5f *sphereRad + sphereRad;
 			radSquared = sphereRad*sphereRad;
-			distance = 1.0f - (pow((voxelCenter - sphereCenter).L2Norm(), 2) / radSquared);
+			Vector3 n_distance = voxelCenter - sphereCenter;
+			n_distance.Normalize();
+			distance = 1.0f - (pow(n_distance.L2Norm(), 2) / radSquared);
+			// set color based on distance
 			if (distance > 0.0f)
 			{
 				m_voxelarray[voxelIndex].AddColor(color);
@@ -91,13 +99,15 @@ void Smoke::AddLightTransmissivity(std::vector<Sphere*> lights)
 	int light_num = lights.size();
 	for (unsigned int i = 0; i < m_voxelarray.size(); i++)
 	{
+		T = 0.0f;
 		for (int l_t = 0; l_t < light_num; l_t++)
 		{
 			voxelCenter = m_voxelarray[i].GetCenter();
 			lightDir = lights[l_t]->getCenter() - voxelCenter;
 			T += RaymarchLight(voxelCenter, lightDir);
-			m_voxelarray[i].SetTransmissivity(T);
 		}
+		T /= light_num;
+		m_voxelarray[i].SetTransmissivity(T);
 	}
 
 }
@@ -171,7 +181,7 @@ bool Smoke::IsOutside(Vector3& location)
 	float x = fabs(location.X());
 	float y = fabs(location.Y());
 	float z = location.Z();
-	if ((x >= m_maxX) || (y >= m_maxY) || (z > 0.0f) || (z <= -m_maxZ))
+	if ((x >= m_maxX) || (x <= m_minX) || (y >= m_maxY) || (y <= m_minY) || (z >= m_maxZ) || (z <= m_minZ))
 		return true;
 	else
 		return false;
@@ -232,13 +242,13 @@ unsigned int Smoke::GetIndexFromLocation(float x, float y, float z)
 	if(-z > m_maxZ)
 	return 0;*/
 
-	float xV = x / VOXEL_SCALE;
-	float yV = y / VOXEL_SCALE;
-	float zV = -z / VOXEL_SCALE;
+	float xV = (m_maxX - x) / VOXEL_SCALE;
+	float yV = (m_maxY - y) / VOXEL_SCALE;
+	float zV = (m_maxZ - z) / VOXEL_SCALE;
 
-	unsigned int xInt = (m_voxelWidth - 1) / 2 - (unsigned int)xV;
-	unsigned int yInt = (m_voxelHeight - 1) / 2 - (unsigned int)yV;
-	unsigned int zInt = (unsigned int)zV;
+	unsigned int xInt = m_voxelWidth - 1 - (unsigned int)xV;
+	unsigned int yInt = (m_voxelHeight - 1) - (unsigned int)yV;
+	unsigned int zInt = m_voxelDepth - 1 - (unsigned int)zV;
 
 	return xInt + yInt*m_voxelWidth + zInt*m_voxelHeight*m_voxelWidth;
 }

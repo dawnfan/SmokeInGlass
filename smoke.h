@@ -15,7 +15,7 @@ public:
 	Smoke();
 	~Smoke();
 
-	void GenerateVoxels(float maxX, float maxY, float maxZ);
+	void GenerateVoxels(Vector3 maxV, Vector3 minV);
 	void VoxelizeSpheres(std::vector<Sphere*> spheres);
 	bool IsOutside(Vector3& location);
 	void AddLightTransmissivity(std::vector<Sphere*> lights);
@@ -25,6 +25,9 @@ private:
 	float m_maxX;
 	float m_maxY;
 	float m_maxZ;
+	float m_minX;
+	float m_minY;
+	float m_minZ;
 	unsigned int m_voxelWidth;
 	unsigned int m_voxelHeight;
 	unsigned int m_voxelDepth;
