@@ -25,6 +25,8 @@ Camera::Camera()
 	// smoke rendering
 	GenerateSpheres();
 	GenerateSmoke();
+	m_kappa = 1;
+	m_deltaS = 0.01;
 }
 
 void Camera::GenerateSpheres()
@@ -78,11 +80,11 @@ void Camera::GenerateSmoke()
 		z = sphere->getCenter().Z() - maxPerturbation*sphere->getRadius();
 
 		if (x < minX)
-			maxX = x;
+			minX = x;
 		if (y < minY)
-			maxY = y;
+			minY = y;
 		if (z < minZ)
-			maxZ = z;
+			minZ = z;
 	}
 
 	Vector3 maxV(maxX, maxY, maxZ);
@@ -200,9 +202,12 @@ Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double i
 		Vector3 intersectionB = ray_in_smoke.getPoint(t_out_smoke);
 		double startT = t;
 		double endT = (intersectionB - intersectionA).X() / direction.X() + startT;
+		Vector3 march_color(0, 0, 0);
+		double march_density = 0;
 		if (result_out_smoke == -1)
 		{
-			pixel_color += rayMarch(direction, startT, endT);/////
+			march_color = rayMarch(ray, startT, endT, march_density) * 5;/////
+			pixel_color += march_color;
 		}
 		else
 		{
@@ -213,9 +218,9 @@ Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double i
 		double smoke_t;
 		Color smoke_color(0, 0, 0);
 		Ray ray_out_smoke(intersectionB + direction*EPSILON, direction);
-		rayTrace(ray_out_smoke, smoke_color, re_depth + 1, index, smoke_t);
+		rayTrace(ray_out_smoke, smoke_color, re_depth, index, smoke_t);
 		double density = object->getDensity();
-		pixel_color += smoke_color*density;//////
+		pixel_color += smoke_color*density*(1.0f - march_density)*0.5f;//////
 	}
 	// hit a object
 	else
@@ -263,14 +268,17 @@ Primitive* Camera::rayTrace(Ray& ray, Color& pixel_color, int re_depth, double i
 	return object;
 }
 
-Color Camera::rayMarch(Vector3& rayDirection, double startT, double endT)
+Color Camera::rayMarch(Ray ray_march, double startT, double endT, double& density_out)
 {
 	Color color_a(0, 0, 0);
-	Vector3 location(0, 0, 0);
+	Vector3 location = ray_march.getOrigin();
+	Vector3 rayDirection = ray_march.getDirection();
 	location = location + rayDirection * startT;
 	double T = 1.0f;
 	double deltaT;
 	double current_t = startT;
+	density_out = 0;
+	double density_tmp = 0;
 
 	Color instColor;
 	double instDensity;
@@ -290,7 +298,9 @@ Color Camera::rayMarch(Vector3& rayDirection, double startT, double endT)
 			deltaT = exp(-m_kappa*m_deltaS*instDensity);
 			T *= deltaT;
 			Color light_color(1, 1, 1);
-			color_a += instColor * light_color * (1 - deltaT) / m_kappa * T * lightTrans;
+			density_tmp = (1 - deltaT) / m_kappa * T * lightTrans;
+			density_out += density_tmp;
+			color_a += instColor * light_color * density_tmp;
 		}
 	}
 	return color_a;
@@ -331,7 +341,7 @@ void Camera::render()
 		{
 			std::cout << "1/3 raytracing: done." << endl;
 		}
-		else if (i == 5*my_pixel_height / 12)
+		else if (i == 5 * my_pixel_height / 12)
 		{
 			std::cout << "5/12 raytracing: done." << endl;
 			// could be a endless recursion.
@@ -341,7 +351,7 @@ void Camera::render()
 		{
 			std::cout << "1/2 raytracing: done." << endl;
 		}
-		else if (i == 2*my_pixel_height / 3)
+		else if (i == 2 * my_pixel_height / 3)
 		{
 			std::cout << "2/3 raytracing: done." << endl;
 		}

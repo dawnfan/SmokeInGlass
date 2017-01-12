@@ -41,7 +41,7 @@ public:
 	// smoke rendering
 	void GenerateSpheres();
 	void GenerateSmoke();
-	Color rayMarch(Vector3& rayDirection, double startT, double endT);
+	Color rayMarch(Ray ray_march, double startT, double endT, double& density_out);
 };
 
 #endif	// CAMERA_H

@@ -153,7 +153,7 @@ void Image::init()
 		prim++;
 	}
 	// smoke sphere
-	my_primitive[prim] = new Sphere(Vector3(0.f, -0.0f, 1), 1.0f);
+	my_primitive[prim] = new Sphere(Vector3(2, 0.8f, 3), 1.0f);
 	my_primitive[prim]->setSmoke(true);
 	my_primitive[prim]->setDensity(2.0f);
 	prim++;
